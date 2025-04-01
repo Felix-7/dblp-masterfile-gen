@@ -59,7 +59,8 @@ export class AuthorSearchComponent {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'MASTER-File.master';
+    const mainAuthor = this.authorName.replace(/\s+/g, '_').replace(/&/g, '');
+    a.download = `${mainAuthor}.master`;
     a.click();
     window.URL.revokeObjectURL(url);
   }
