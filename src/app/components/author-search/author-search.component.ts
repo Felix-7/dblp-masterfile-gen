@@ -17,8 +17,13 @@ import { NgForOf, NgIf } from '@angular/common';
 })
 export class AuthorSearchComponent {
   authorName: string = '';
+  earliestYear?: number;
+  latestYear?: number;
   suggestions: any[] = [];
   masterfileLines: string[] = [];
+  worksCount: number = 0;
+  authorsCount: number = 0;
+  statsAvailable: boolean = false;
 
   constructor(
     private dblpService: DblpService,
@@ -50,7 +55,29 @@ export class AuthorSearchComponent {
     const authorId = suggestion.author.id;
     this.dblpService.loadPublications(authorId).subscribe(rawXml => {
       const publications = this.masterfileService.parsePublications(rawXml);
-      this.masterfileLines = this.masterfileService.generateMasterfileLines(publications, authorId);
+
+      const filteredPubs = publications.filter(pub => {
+        if (this.earliestYear && pub.year < this.earliestYear) {
+          return false;
+        }
+        if (this.latestYear && pub.year > this.latestYear) {
+          return false;
+        }
+        return true;
+      });
+
+      // Statistics
+      this.worksCount = filteredPubs.length;
+      const authorsSet = new Set();
+      filteredPubs.forEach(pub => {
+        pub.authors.forEach((author: any) => {
+          authorsSet.add(author.id);
+        });
+      });
+      this.authorsCount = authorsSet.size;
+      this.statsAvailable = true;
+
+      this.masterfileLines = this.masterfileService.generateMasterfileLines(filteredPubs, authorId);
     });
   }
 

@@ -13,6 +13,25 @@
         <button class="btn btn-primary" (click)="searchAuthor()">Search</button>
       </div>
 
+      <div class="row mb-3">
+        <div class="col">
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="earliestYear"
+            placeholder="Earliest year"
+          />
+        </div>
+        <div class="col">
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="latestYear"
+            placeholder="Latest year"
+          />
+        </div>
+      </div>
+
       <div *ngIf="suggestions?.length">
         <ul class="list-group mb-4">
           <li
@@ -26,10 +45,18 @@
         </ul>
       </div>
 
+      <!-- Display statistics if available -->
+      <div *ngIf="statsAvailable" class="mb-3">
+        <p><strong>Works Count:</strong> {{ worksCount }}</p>
+        <p><strong>Distinct Authors:</strong> {{ authorsCount }}</p>
+      </div>
+
       <div *ngIf="masterfileLines?.length">
         <div class="mb-3">
           <label class="form-label fw-bold">Generated MASTER-File:</label>
-          <pre class="form-control" style="height: 300px; overflow-y: scroll;">{{ masterfileLines.join('\n') }}</pre>
+          <pre class="form-control" style="height: 300px; overflow-y: scroll;">
+            {{ masterfileLines.join('\n') }}
+          </pre>
         </div>
         <button class="btn btn-success w-100" (click)="downloadMasterfile()">Download MASTER-File</button>
       </div>
