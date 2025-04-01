@@ -114,7 +114,6 @@ export class MasterfileGeneratorService {
     headerLines.push(`* Generated using the DBLP Master-Generator inspired by Tim Hegemann`);
     const mainAuthorName = this.masterAuthors[mainAuthorId].fullName;
     headerLines.push(`* Main Author: ${mainAuthorName}`);
-    headerLines.push('');
 
     masterOrder.forEach(id => {
       const { abbreviation, fullName } = this.masterAuthors[id];
