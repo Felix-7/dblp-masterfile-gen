@@ -1,0 +1,38 @@
+<div class="container mt-5">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3 class="card-title mb-4 text-center text-primary">DBLP Masterfile Generator</h3>
+
+      <div class="input-group mb-3">
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="authorName"
+          placeholder="Enter author name"
+        />
+        <button class="btn btn-primary" (click)="searchAuthor()">Search</button>
+      </div>
+
+      <div *ngIf="suggestions?.length">
+        <ul class="list-group mb-4">
+          <li
+            *ngFor="let suggestion of suggestions"
+            class="list-group-item list-group-item-action"
+            (click)="selectAuthor(suggestion)"
+            style="cursor: pointer;"
+          >
+            {{ suggestion.hint }}
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="masterfileLines?.length">
+        <div class="mb-3">
+          <label class="form-label fw-bold">Generated MASTER-File:</label>
+          <pre class="form-control" style="height: 300px; overflow-y: scroll;">{{ masterfileLines.join('\n') }}</pre>
+        </div>
+        <button class="btn btn-success w-100" (click)="downloadMasterfile()">Download MASTER-File</button>
+      </div>
+    </div>
+  </div>
+</div>
