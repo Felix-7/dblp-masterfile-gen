@@ -78,9 +78,13 @@ export class MasterfileGeneratorService {
     const masterOrder = Object.keys(this.masterAuthors);
     const allAuthors = masterOrder.map(id => this.masterAuthors[id].abbreviation);
 
-    // Generate line for each publication
-    publications.forEach((pub, index) => {
-      const timestamp = `t${(index + 1).toString().padStart(2, '0')}`;
+    // Build publication lines
+
+    publications.sort((a, b) => a.year - b.year);
+
+    publications.forEach((pub) => {
+      // Timestamp is based on the publication year.
+      const timestamp = `t${pub.year}`;
       // Build the list of present authors for this publication (using their abbreviation).
       let present: string[] = [];
       pub.authors.forEach((author: any) => {
@@ -97,12 +101,32 @@ export class MasterfileGeneratorService {
       }).map(id => this.masterAuthors[id].abbreviation);
 
       // Format: timestamp : <present>; <missing> : <allAuthors>
-      const line = `${timestamp} : ${present.join(',')}` +
+      const pubLine = `${timestamp} : ${present.join(',')}` +
         (missing.length > 0 ? `;${missing.join(';')}` : '') +
         ` : ${allAuthors.join(',')}`;
-      lines.push(line);
+      lines.push(pubLine);
     });
-    return lines;
+
+    // Build header
+
+    const headerLines: string[] = [];
+
+    headerLines.push(`* Generated using the DBLP Master-Generator inspired by Tim Hegemann`);
+    const mainAuthorName = this.masterAuthors[mainAuthorId].fullName;
+    headerLines.push(`* Main Author: ${mainAuthorName}`);
+    headerLines.push('');
+
+    masterOrder.forEach(id => {
+      const { abbreviation, fullName } = this.masterAuthors[id];
+      headerLines.push(`${abbreviation} ${fullName}`);
+    });
+    headerLines.push('');
+
+    const protagonistAbbr = this.masterAuthors[mainAuthorId].abbreviation;
+    headerLines.push(`${protagonistAbbr} Protagonist`);
+    headerLines.push('');
+
+    return [...headerLines, ...lines];
   }
 
   // TODO Handle cases where two individuals have the same initials.
