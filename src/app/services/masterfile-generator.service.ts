@@ -128,10 +128,28 @@ export class MasterfileGeneratorService {
     return [...headerLines, ...lines];
   }
 
-  // TODO Handle cases where two individuals have the same initials.
   private generateAbbreviation(fullName: string): string {
-    return fullName.split(' ')
+    // Base abbreviation is the first letter of each word in the full name, capitalized
+    const base = fullName
+      .split(' ')
       .map(word => word.charAt(0).toUpperCase())
       .join('');
+
+    // If the base abbreviation is not already taken, return it
+    const existingAbbrs = new Set(
+      Object.values(this.masterAuthors).map(a => a.abbreviation)
+    );
+    if (!existingAbbrs.has(base)) {
+      return base;
+    }
+
+    // If the base abbreviation is taken, append a number to it
+    let suffix = 1;
+    let attempt = `${base}${suffix}`;
+    while (existingAbbrs.has(attempt)) {
+      suffix += 1;
+      attempt = `${base}${suffix}`;
+    }
+    return attempt;
   }
 }
