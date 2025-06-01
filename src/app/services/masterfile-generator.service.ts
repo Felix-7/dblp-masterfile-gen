@@ -16,8 +16,8 @@ export class MasterfileGeneratorService {
     const publications: any[] = [];
     const rNodes = xmlDoc.getElementsByTagName('r');
 
-    for (let i = 0; i < rNodes.length; i++) {
-      const r = rNodes[i];
+    for (const element of rNodes) {
+      const r = element;
       const entry = r.firstElementChild;
 
       if (entry) {
@@ -35,12 +35,12 @@ export class MasterfileGeneratorService {
           const authorElements = entry.getElementsByTagName('author');
           const authors: any[] = [];
 
-          for (let j = 0; j < authorElements.length; j++) {
-            const authorElem = authorElements[j];
-            const fullName = authorElem.textContent?.trim() || '';
+          for (const element of authorElements) {
+            const authorElem = element;
+            const fullName = authorElem.textContent?.trim() ?? '';
             // Use the pid attribute if available; otherwise, fallback to the full name as dblp states that
             // pid might be incomplete?? TODO Double-Check if I understood that correctly
-            const id = authorElem.getAttribute('pid') || fullName;
+            const id = authorElem.getAttribute('pid') ?? fullName;
             authors.push({ id, name: fullName });
           }
           publications.push({ year, authors });
