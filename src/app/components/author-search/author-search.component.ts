@@ -3,6 +3,9 @@ import { DblpService } from '../../services/dblp.service';
 import { MasterfileGeneratorService } from '../../services/masterfile-generator.service';
 import { FormsModule } from '@angular/forms';
 import { NgForOf, NgIf } from '@angular/common';
+import {MasterfileAdapterService} from '../../services/masterfile-adapter.service';
+import {DblpFilters, DblpSparqlService} from '../../services/dblp-sparql.service';
+import {firstValueFrom} from 'rxjs';
 
 @Component({
   selector: 'app-author-search',
@@ -17,17 +20,29 @@ import { NgForOf, NgIf } from '@angular/common';
 })
 export class AuthorSearchComponent {
   authorName: string = '';
-  earliestYear?: number;
-  latestYear?: number;
+  authorPid = '';
   suggestions: any[] = [];
+
   masterfileLines: string[] = [];
-  worksCount: number = 0;
-  authorsCount: number = 0;
-  statsAvailable: boolean = false;
+  metaJson = '';
+
+  loading = false;
+
+  statsSummary: string | null = null;
+  noResults = false;
+
+  types: Record<string, boolean> = { Article: true, Inproceedings: true, Incollection: false, Informal: false, Book: false };
+  venueSuffix?: string;
+  minAuthorPubs = 0;
+  focusTopAuthors = 0;
+  yearMin?: number;
+  yearMax?: number;
 
   constructor(
-    private dblpService: DblpService,
-    private masterfileService: MasterfileGeneratorService
+    private readonly dblpService: DblpService,
+    private readonly masterfileService: MasterfileGeneratorService,
+    private readonly sparql: DblpSparqlService,
+    private readonly mfAdapter: MasterfileAdapterService
   ) {}
 
   // Build suggestion list
@@ -50,35 +65,10 @@ export class AuthorSearchComponent {
     });
   }
 
-  // When an author is selected, load the publications, parse them and generate the master file lines
   selectAuthor(suggestion: any) {
-    const authorId = suggestion.author.id;
-    this.dblpService.loadPublications(authorId).subscribe(rawXml => {
-      const publications = this.masterfileService.parsePublications(rawXml);
-
-      const filteredPubs = publications.filter(pub => {
-        if (this.earliestYear && pub.year < this.earliestYear) {
-          return false;
-        }
-        if (this.latestYear && pub.year > this.latestYear) {
-          return false;
-        }
-        return true;
-      });
-
-      // Statistics
-      this.worksCount = filteredPubs.length;
-      const authorsSet = new Set();
-      filteredPubs.forEach(pub => {
-        pub.authors.forEach((author: any) => {
-          authorsSet.add(author.id);
-        });
-      });
-      this.authorsCount = authorsSet.size;
-      this.statsAvailable = true;
-
-      this.masterfileLines = this.masterfileService.generateMasterfileLines(filteredPubs, authorId);
-    });
+    this.authorPid = suggestion.author.id;
+    this.authorName = suggestion.author.name;
+    this.suggestions = []; // collapse suggestions list
   }
 
   downloadMasterfile() {
@@ -90,5 +80,71 @@ export class AuthorSearchComponent {
     a.download = `${mainAuthor}.master`;
     a.click();
     window.URL.revokeObjectURL(url);
+  }
+
+  private selectedTypes(): DblpFilters['types'] {
+    return (Object.keys(this.types) as Array<keyof typeof this.types>)
+      .filter(k => this.types[k]) as any;
+  }
+
+  async generateWithSparql(): Promise<void> {
+    if (!this.authorPid) return;
+    this.loading = true;
+    this.noResults = false;
+    try {
+      const filters: DblpFilters = {
+        protagonistPid: this.authorPid,
+        types: this.selectedTypes(),
+        venueSuffix: this.venueSuffix || undefined,
+        minAuthorPubs: this.minAuthorPubs || 0,
+        focusTopAuthors: this.focusTopAuthors || 0,
+        yearMin: this.yearMin,
+        yearMax: this.yearMax
+      };
+
+      const query = this.sparql.buildQuery(filters);
+      const rows = await firstValueFrom(this.sparql.runQuery(query));
+
+      if (rows.length === 0) {
+        this.noResults = true;
+        this.masterfileLines = [];
+        this.metaJson = '';
+        this.statsSummary = null;
+        return;
+      }
+
+      const built = this.mfAdapter.toMasterfile(
+        this.masterfileService,
+        rows,
+        { id: this.authorPid, name: this.authorName },
+        filters
+      );
+
+      this.masterfileLines = built.lines;
+      this.metaJson = JSON.stringify(built.meta, null, 2);
+
+      const s = built.meta.stats;
+      let line1 = `${s.papers} papers \u2022 ${s.distinctCoauthors} coauthors \u2022 avg strength ${s.avgCoauthorStrength_overall.toFixed(2)}`;
+
+      let typeBreakdown = Object.entries(s.byType)
+        .map(([type, count]) => `${count} ${type.toLowerCase()}`)
+        .join(' \u2022 ');
+      if (!typeBreakdown) typeBreakdown = 'no type info';
+
+      this.statsSummary = line1 + '\n' + typeBreakdown;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  downloadMeta() {
+    const blob = new Blob([this.metaJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const mainAuthor = this.authorName.replace(/\s+/g, '_').replace(/&/g, '');
+    a.href = url;
+    a.download = `${mainAuthor}.meta.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

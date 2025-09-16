@@ -1,7 +1,9 @@
-<div class="container mt-5">
-  <div class="card shadow-sm">
+<div class="container mt-5 mb-5">
+
+  <!-- Search Card -->
+  <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <h3 class="card-title mb-4 text-center text-primary">DBLP Masterfile Generator</h3>
+      <h3 class="card-title mb-3 text-center text-primary">DBLP Masterfile Generator</h3>
 
       <div class="input-group mb-3">
         <input
@@ -9,31 +11,13 @@
           class="form-control"
           [(ngModel)]="authorName"
           placeholder="Enter author name"
+          (keyup.enter)="searchAuthor()"
         />
         <button class="btn btn-primary" (click)="searchAuthor()">Search</button>
       </div>
 
-      <div class="row mb-3">
-        <div class="col">
-          <input
-            type="number"
-            class="form-control"
-            [(ngModel)]="earliestYear"
-            placeholder="Earliest year"
-          />
-        </div>
-        <div class="col">
-          <input
-            type="number"
-            class="form-control"
-            [(ngModel)]="latestYear"
-            placeholder="Latest year"
-          />
-        </div>
-      </div>
-
       <div *ngIf="suggestions?.length">
-        <ul class="list-group mb-4">
+        <ul class="list-group mb-3">
           <li
             *ngFor="let suggestion of suggestions"
             class="list-group-item list-group-item-action"
@@ -44,21 +28,85 @@
           </li>
         </ul>
       </div>
+    </div>
+  </div>
 
-      <!-- Display statistics if available -->
-      <div *ngIf="statsAvailable" class="mb-3">
-        <p><strong>Works Count:</strong> {{ worksCount }}</p>
-        <p><strong>Distinct Authors:</strong> {{ authorsCount }}</p>
+  <!-- Filters Card -->
+  <div class="card shadow-sm mb-4" *ngIf="authorPid">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Filters</h5>
+
+      <div class="row mb-3">
+        <div class="col">
+          <input type="number" class="form-control" [(ngModel)]="yearMin" placeholder="Year &geq;"/>
+        </div>
+        <div class="col">
+          <input type="number" class="form-control" [(ngModel)]="yearMax" placeholder="Year &leq;"/>
+        </div>
       </div>
 
-      <div *ngIf="masterfileLines?.length">
-        <div class="mb-3">
-          <label class="form-label fw-bold">Generated MASTER-File:</label>
-          <pre class="form-control" style="height: 300px; overflow-y: scroll;">
-            {{ masterfileLines.join('\n') }}
-          </pre>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Publication types</label>
+        <div class="d-flex flex-wrap gap-3">
+          <label><input type="checkbox" [(ngModel)]="types['Article']"> Article</label>
+          <label><input type="checkbox" [(ngModel)]="types['Inproceedings']"> Inproceedings</label>
+          <label><input type="checkbox" [(ngModel)]="types['Incollection']"> Incollection</label>
+          <label><input type="checkbox" [(ngModel)]="types['Informal']"> Informal</label>
+          <label><input type="checkbox" [(ngModel)]="types['Book']"> Book</label>
         </div>
-        <button class="btn btn-success w-100" (click)="downloadMasterfile()">Download MASTER-File</button>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Venue/Series</label>
+        <input class="form-control" [(ngModel)]="venueSuffix" placeholder="e.g. conf/gd or journals/jgaa">
+        <small class="form-text text-muted">
+          Will expand to https://dblp.org/streams/[your input]
+        </small>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col">
+          <label class="form-label fw-bold">Min papers per author</label>
+          <input type="number" min="0" class="form-control" [(ngModel)]="minAuthorPubs">
+        </div>
+        <div class="col">
+          <label class="form-label fw-bold">Focus top-K authors</label>
+          <input type="number" min="0" class="form-control" [(ngModel)]="focusTopAuthors">
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-100"
+              [disabled]="loading || !authorPid"
+              (click)="generateWithSparql()">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+        {{ loading ? 'Generating...' : 'Generate dataset (SPARQL)' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Results Card -->
+
+  <div *ngIf="noResults" class="alert alert-warning text-center mb-3">
+    No publications found for the selected author and filters.
+  </div>
+
+  <div *ngIf="statsSummary" class="alert alert-info text-center mb-3" style="white-space: pre-line;">
+    {{ statsSummary }}
+  </div>
+
+  <div class="card shadow-sm" *ngIf="masterfileLines?.length">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Generated MASTER-File</h5>
+      <pre class="form-control" style="height: 300px; overflow-y: scroll;">
+        {{ masterfileLines.join('\n') }}
+      </pre>
+      <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+        <button class="btn btn-success flex-fill" (click)="downloadMasterfile()">
+          Download MASTER-File
+        </button>
+        <button class="btn btn-outline-secondary flex-fill" (click)="downloadMeta()">
+          Download Metadata (JSON)
+        </button>
       </div>
     </div>
   </div>
