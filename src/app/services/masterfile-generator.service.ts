@@ -9,48 +9,7 @@ export class MasterfileGeneratorService {
 
   constructor() {}
 
-  parsePublications(rawXml: string): any[] {
-
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(rawXml, "application/xml");
-    const publications: any[] = [];
-    const rNodes = xmlDoc.getElementsByTagName('r');
-
-    for (const element of rNodes) {
-      const r = element;
-      const entry = r.firstElementChild;
-
-      if (entry) {
-        const nodeName = entry.nodeName.toLowerCase();
-        if (['article', 'inproceedings', 'incollection', 'phdthesis'].includes(nodeName)) {
-
-          const yearElement = entry.getElementsByTagName('year')[0];
-          const year = yearElement ? parseInt(yearElement.textContent || '', 10) : NaN;
-
-          if (isNaN(year)) {
-            console.warn(`Invalid year found in publication: ${entry.outerHTML}`);
-            continue; // Skip if year is not valid
-          }
-
-          const authorElements = entry.getElementsByTagName('author');
-          const authors: any[] = [];
-
-          for (const element of authorElements) {
-            const authorElem = element;
-            const fullName = authorElem.textContent?.trim() ?? '';
-            // Use the pid attribute if available; otherwise, fallback to the full name as dblp states that
-            // pid might be incomplete?? TODO Double-Check if I understood that correctly
-            const id = authorElem.getAttribute('pid') ?? fullName;
-            authors.push({ id, name: fullName });
-          }
-          publications.push({ year, authors });
-        }
-      }
-    }
-    return publications;
-  }
-
-  generateMasterfileLines(publications: any[], mainAuthorId: string): string[] {
+  generateMasterfileLines(publications: any[], mainAuthorId: string, meta?: any): string[] {
 
     const lines: string[] = [];
     this.masterAuthors = {};
@@ -114,6 +73,14 @@ export class MasterfileGeneratorService {
     headerLines.push(`* Generated using the DBLP Master-Generator inspired by Tim Hegemann`);
     const mainAuthorName = this.masterAuthors[mainAuthorId].fullName;
     headerLines.push(`* Main Author: ${mainAuthorName}`);
+
+    if (meta) {
+      headerLines.push(`* Generated at: ${meta.generatedAt}`);
+      headerLines.push(`* Filters: ${JSON.stringify(meta.filters)}`);
+      headerLines.push(`* Papers: ${meta.stats.papers}, Distinct coauthors: ${meta.stats.distinctCoauthors}`);
+      headerLines.push(`* Avg coauthor strength: ${meta.stats.avgCoauthorStrength_overall.toFixed(2)}`);
+      headerLines.push(`* Breakdown: ${Object.entries(meta.stats.byType).map(([t,c]) => `${c} ${t}`).join(', ')}`);
+    }
 
     masterOrder.forEach(id => {
       const { abbreviation, fullName } = this.masterAuthors[id];
