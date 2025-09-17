@@ -40,8 +40,8 @@ export class DblpSparqlService {
       : '';
 
     const yearClauses = [
-      typeof f.yearMin === 'number' ? `FILTER(xsd:integer(?year) >= ${f.yearMin})` : '',
-      typeof f.yearMax === 'number' ? `FILTER(xsd:integer(?year) <= ${f.yearMax})` : ''
+      typeof f.yearMin === 'number' ? `FILTER(?year >= "${f.yearMin}"^^xsd:gYear)` : '',
+      typeof f.yearMax === 'number' ? `FILTER(?year <= "${f.yearMax}"^^xsd:gYear)` : ''
     ].filter(Boolean).join('\n  ');
 
     const minPubs = Math.max(0, f.minAuthorPubs ?? 0);
@@ -58,7 +58,8 @@ export class DblpSparqlService {
         VALUES ?type2 { ${types} }
         ${venueClause}
         ?joint dblp:yearOfPublication ?y2 .
-        ${yearClauses.replace(/\?year/g, '?y2')}
+        ${typeof f.yearMin === 'number' ? `FILTER(?y2 >= "${f.yearMin}"^^xsd:gYear)` : ''}
+        ${typeof f.yearMax === 'number' ? `FILTER(?y2 <= "${f.yearMax}"^^xsd:gYear)` : ''}
         ?sp dblp:signatureCreator ?p .
         ?sa dblp:signatureCreator ?keepCo .
         FILTER(?keepCo != ?p)
@@ -109,7 +110,8 @@ export class DblpSparqlService {
             VALUES ?type2 { ${types} }
             ${venueClause}
             ?joint dblp:yearOfPublication ?y2 .
-            ${yearClauses.replace(/\?year/g, '?y2')}
+            ${typeof f.yearMin === 'number' ? `FILTER(?y2 >= "${f.yearMin}"^^xsd:gYear)` : ''}
+            ${typeof f.yearMax === 'number' ? `FILTER(?y2 <= "${f.yearMax}"^^xsd:gYear)` : ''}
             ?sp dblp:signatureCreator ?p .
             ?sa dblp:signatureCreator ?co .
             FILTER(?co != ?p)
