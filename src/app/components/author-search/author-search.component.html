@@ -44,6 +44,7 @@
             class="form-control"
             [(ngModel)]="authorPid"
             placeholder="e.g. 12/3456"
+            (keyup.enter)="confirmPid()"
           />
           <button class="btn btn-secondary" (click)="confirmPid()">Confirm PID</button>
         </div>
@@ -71,11 +72,15 @@
       <div class="mb-3">
         <label class="form-label fw-bold">Publication types</label>
         <div class="d-flex flex-wrap gap-3">
-          <label><input type="checkbox" [(ngModel)]="types['Article']"> Article</label>
           <label><input type="checkbox" [(ngModel)]="types['Inproceedings']"> Inproceedings</label>
-          <label><input type="checkbox" [(ngModel)]="types['Incollection']"> Incollection</label>
-          <label><input type="checkbox" [(ngModel)]="types['Informal']"> Informal</label>
+          <label><input type="checkbox" [(ngModel)]="types['Article']"> Article</label>
           <label><input type="checkbox" [(ngModel)]="types['Book']"> Book</label>
+          <label><input type="checkbox" [(ngModel)]="types['Editorship']"> Editorship</label>
+          <label><input type="checkbox" [(ngModel)]="types['Incollection']"> Incollection</label>
+          <label><input type="checkbox" [(ngModel)]="types['Reference']"> Reference</label>
+          <label><input type="checkbox" [(ngModel)]="types['Data']"> Data</label>
+          <label><input type="checkbox" [(ngModel)]="types['Informal']"> Informal</label>
+          <label><input type="checkbox" [(ngModel)]="types['Withdrawn']"> Withdrawn</label>
         </div>
       </div>
 

@@ -1,25 +1,45 @@
 import { Injectable } from '@angular/core';
-import {SparqlPubRow} from './dblp-sparql.service';
+import {DblpFilters, SparqlPubRow} from './dblp-sparql.service';
 import {MasterfileGeneratorService} from './masterfile-generator.service';
 
 export interface MasterfileBuild {
   lines: string[];
   meta: {
     generatedAt: string;
-    protagonist: { id: string; name: string };
-    filters: Record<string, any>;
+    protagonist: {
+      id: string;
+      name?: string
+    };
+
+    filters: Record<string, DblpFilters>;
+
     stats: {
-      papers: number;
-      avgCoauthorStrength_overall: number;
+      publications: number;
       byType: Record<string, number>;
-      distinctCoauthors: number;
+      distinctCoauthorsInSet: number;
+
+      // overall collaboration strength summaries (paper-level aggregation)
+      avgCoauthorStrengthInSet_overall: number;
+      avgCoauthorStrengthGlobal_overall: number;
     };
     perPaper: Array<{
       pub: string;
+      title?: string;
       year: number;
       type: string;
+
       coCount: number;
-      avgCoauthorStrength: number;
+
+      // in-set
+      avgCoauthorStrengthInSet: number;
+      minCoauthorStrengthInSet: number;
+      maxCoauthorStrengthInSet: number;
+
+      // global
+      avgCoauthorStrengthGlobal: number;
+      minCoauthorStrengthGlobal: number;
+      maxCoauthorStrengthGlobal: number;
+
     }>;
   };
 }
@@ -59,17 +79,24 @@ export class MasterfileAdapterService {
       protagonist,
       filters,
       stats: {
-        papers: sparqlRows.length,
-        avgCoauthorStrength_overall: average(sparqlRows.map(r => r.avgCoauthorStrength)),
+        publications: sparqlRows.length,
+        avgCoauthorStrengthInSet_overall: average(sparqlRows.map(r => r.avgCoauthorStrengthInSet)),
+        avgCoauthorStrengthGlobal_overall: average(sparqlRows.map(r => r.avgCoauthorStrengthGlobal)),
         byType: groupCount(sparqlRows, r => r.type),
-        distinctCoauthors: distinctCoauthors.size
+        distinctCoauthorsInSet: distinctCoauthors.size
       },
       perPaper: sparqlRows.map(r => ({
         pub: r.pub,
+        title: r.title,
         year: r.year,
         type: r.type,
         coCount: r.coCount,
-        avgCoauthorStrength: r.avgCoauthorStrength
+        avgCoauthorStrengthInSet: r.avgCoauthorStrengthInSet,
+        minCoauthorStrengthInSet: r.minCoauthorStrengthInSet,
+        maxCoauthorStrengthInSet: r.maxCoauthorStrengthInSet,
+        avgCoauthorStrengthGlobal: r.avgCoauthorStrengthGlobal,
+        minCoauthorStrengthGlobal: r.minCoauthorStrengthGlobal,
+        maxCoauthorStrengthGlobal: r.maxCoauthorStrengthGlobal
       }))
     };
 

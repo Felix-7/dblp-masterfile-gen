@@ -78,7 +78,8 @@ export class MasterfileGeneratorService {
       headerLines.push(`* Generated at: ${meta.generatedAt}`);
       headerLines.push(`* Filters: ${JSON.stringify(meta.filters)}`);
       headerLines.push(`* Papers: ${meta.stats.papers}, Distinct coauthors: ${meta.stats.distinctCoauthors}`);
-      headerLines.push(`* Avg coauthor strength: ${meta.stats.avgCoauthorStrength_overall.toFixed(2)}`);
+      headerLines.push(`* Avg coauthor strength in set: ${meta.stats.avgCoauthorStrengthInSet_overall.toFixed(2)}`);
+      headerLines.push(`* Avg coauthor strength global: ${meta.stats.avgCoauthorStrengthGlobal_overall.toFixed(2)}`);
       headerLines.push(`* Breakdown: ${Object.entries(meta.stats.byType).map(([t,c]) => `${c} ${t}`).join(', ')}`);
     }
 

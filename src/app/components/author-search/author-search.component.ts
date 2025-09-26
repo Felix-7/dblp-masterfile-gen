@@ -124,14 +124,15 @@ export class AuthorSearchComponent {
       this.metaJson = JSON.stringify(built.meta, null, 2);
 
       const s = built.meta.stats;
-      let line1 = `${s.papers} papers \u2022 ${s.distinctCoauthors} coauthors \u2022 avg strength ${s.avgCoauthorStrength_overall.toFixed(2)}`;
+      let overview = `${s.publications} publications \u2022 ${s.distinctCoauthorsInSet} coauthors
+        avg set-strength ${s.avgCoauthorStrengthInSet_overall.toFixed(2)} \u2022 avg global-strength ${s.avgCoauthorStrengthGlobal_overall.toFixed(2)}`;
 
       let typeBreakdown = Object.entries(s.byType)
         .map(([type, count]) => `${count} ${type.toLowerCase()}`)
         .join(' \u2022 ');
       if (!typeBreakdown) typeBreakdown = 'no type info';
 
-      this.statsSummary = line1 + '\n' + typeBreakdown;
+      this.statsSummary = overview + '\n' + typeBreakdown;
     } finally {
       this.loading = false;
     }
