@@ -5,28 +5,51 @@
     <div class="card-body">
       <h3 class="card-title mb-3 text-center text-primary">DBLP Masterfile Generator</h3>
 
-      <div class="input-group mb-3">
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="authorName"
-          placeholder="Enter author name"
-          (keyup.enter)="searchAuthor()"
-        />
-        <button class="btn btn-primary" (click)="searchAuthor()">Search</button>
+      <!-- Option A: Search by name -->
+      <div class="mb-4">
+        <h6 class="text-muted">Option A: Search by author name</h6>
+        <div class="input-group mb-3">
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="authorName"
+            placeholder="Enter author name"
+            (keyup.enter)="searchAuthor()"
+          />
+          <button class="btn btn-primary" (click)="searchAuthor()">Search</button>
+        </div>
+
+        <div *ngIf="suggestions?.length">
+          <ul class="list-group mb-3">
+            <li
+              *ngFor="let suggestion of suggestions"
+              class="list-group-item list-group-item-action"
+              (click)="selectAuthor(suggestion)"
+              style="cursor: pointer;"
+            >
+              {{ suggestion.hint }}
+            </li>
+          </ul>
+        </div>
       </div>
 
-      <div *ngIf="suggestions?.length">
-        <ul class="list-group mb-3">
-          <li
-            *ngFor="let suggestion of suggestions"
-            class="list-group-item list-group-item-action"
-            (click)="selectAuthor(suggestion)"
-            style="cursor: pointer;"
-          >
-            {{ suggestion.hint }}
-          </li>
-        </ul>
+      <hr>
+
+      <!-- Option B: Enter PID directly -->
+      <div class="mb-3">
+        <h6 class="text-muted">Option B: Enter author PID directly</h6>
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="authorPid"
+            placeholder="e.g. 12/3456"
+          />
+          <button class="btn btn-secondary" (click)="confirmPid()">Confirm PID</button>
+        </div>
+        <small class="form-text text-muted">
+          Copy from <code>https://dblp.org/pid/[pid]</code>
+        </small>
       </div>
     </div>
   </div>
@@ -60,7 +83,7 @@
         <label class="form-label fw-bold">Venue/Series</label>
         <input class="form-control" [(ngModel)]="venueSuffix" placeholder="e.g. conf/gd or journals/jgaa">
         <small class="form-text text-muted">
-          Will expand to https://dblp.org/streams/[your input]
+          Will expand to <code>https://dblp.org/streams/[your input]</code>
         </small>
       </div>
 

@@ -147,4 +147,17 @@ export class AuthorSearchComponent {
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  async confirmPid() {
+    if (!this.authorPid) return;
+    try {
+      const { pid, name } = await firstValueFrom(this.dblpService.findAuthorByPid(this.authorPid));
+      this.authorPid = pid;
+      this.authorName = name;
+      this.suggestions = [];
+    } catch (err) {
+      console.error('PID lookup failed', err);
+      this.authorName = '(Lookup failed)';
+    }
+  }
 }
