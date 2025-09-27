@@ -112,6 +112,51 @@
     </div>
   </div>
 
+  <!-- Mass Mode Panel -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" id="massModeSwitch" [(ngModel)]="massMode.enabled">
+        <label class="form-check-label" for="massModeSwitch">Mass mode (prefix numbering + CSV append)</label>
+      </div>
+
+      <div *ngIf="massMode.enabled" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Testset ID</label>
+          <input class="form-control" [(ngModel)]="massMode.testsetId" placeholder="e.g. testset1">
+          <small class="text-muted">Used for filenames & CSV</small>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Next prefix</label>
+          <div class="input-group">
+            <input class="form-control" [(ngModel)]="massMode.seq" type="number" min="1">
+            <span class="input-group-text">&rightarrow; will render as {{ nextPrefix() }}</span>
+          </div>
+          <small class="text-muted">Starts at 1 → "001", then "002", ...</small>
+        </div>
+        <div class="col-md-5 d-flex gap-2">
+          <button class="btn btn-outline-primary flex-fill"
+                  [disabled]="!massMode.testsetId"
+                  (click)="downloadCsvIndex()">
+            Download CSV index
+          </button>
+          <button class="btn btn-outline-danger flex-fill"
+                  [disabled]="!massMode.testsetId"
+                  (click)="resetCsvIndex()">
+            Reset CSV for testset
+          </button>
+        </div>
+        <div class="col-12">
+          <small class="text-muted">
+            On each MASTER download, a CSV row will be appended automatically.
+            Filename preview:
+            <code>{{ previewMasterFilename() }}</code>
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Results Card -->
 
   <div *ngIf="noResults" class="alert alert-warning text-center mb-3">

@@ -6,6 +6,7 @@ import { NgForOf, NgIf } from '@angular/common';
 import {MasterfileAdapterService} from '../../services/masterfile-adapter.service';
 import {DblpFilters, DblpSparqlService} from '../../services/dblp-sparql.service';
 import {firstValueFrom} from 'rxjs';
+import {CsvIndexService} from '../../services/csv-index.service';
 
 @Component({
   selector: 'app-author-search',
@@ -38,11 +39,19 @@ export class AuthorSearchComponent {
   yearMin?: number;
   yearMax?: number;
 
+  massMode = {
+    enabled: false,
+    testsetId: '',
+    seq: 1
+  };
+
+
   constructor(
     private readonly dblpService: DblpService,
     private readonly masterfileService: MasterfileGeneratorService,
     private readonly sparql: DblpSparqlService,
-    private readonly mfAdapter: MasterfileAdapterService
+    private readonly mfAdapter: MasterfileAdapterService,
+    private readonly csvIndex: CsvIndexService
   ) {}
 
   // Build suggestion list
@@ -72,18 +81,49 @@ export class AuthorSearchComponent {
   }
 
   downloadMasterfile() {
+    const canonical = this.canonicalMasterName();
+    const prefixed = (this.massMode.enabled && this.massMode.testsetId)
+      ? `${this.nextPrefix()}_${canonical}`
+      : canonical;
+
+    // download file
     const blob = new Blob([this.masterfileLines.join('\n')], { type: 'text/plain;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const mainAuthor = this.authorName.replace(/\s+/g, '_').replace(/&/g, '');
-    a.download = `${mainAuthor}.master`;
+    a.download = prefixed;
     a.click();
     window.URL.revokeObjectURL(url);
+
+    // CSV append (only downloadName)
+    if (this.massMode.enabled && this.massMode.testsetId && this.metaJson) {
+      try {
+        const meta = JSON.parse(this.metaJson);
+        const s = meta.stats;
+        const pubs = s.publications ?? s.papers ?? 0;
+        const coDistinct = s.distinctCoauthorsInSet ?? 0;
+
+        this.csvIndex.appendRow({
+          TestsetID: this.massMode.testsetId,
+          PID: this.authorPid,
+          Name: this.authorName || '',
+          pubsInFilter: pubs,
+          uniqueCoauthorsInFilter: coDistinct,
+          avgCoauthorStrengthInSet: Number(s.avgCoauthorStrengthInSet_overall ?? 0),
+          avgCoauthorStrengthGlobal: Number(s.avgCoauthorStrengthGlobal_overall ?? 0),
+          downloadName: prefixed
+        });
+
+        // bump sequence for next file
+        this.massMode.seq = Math.max(1, Math.floor(this.massMode.seq || 1)) + 1;
+      } catch (e) {
+        console.warn('CSV append skipped (meta JSON parse failed):', e);
+      }
+    }
   }
 
   private selectedTypes(): DblpFilters['types'] {
-    return (Object.keys(this.types) as Array<keyof typeof this.types>)
+    return (Object.keys(this.types))
       .filter(k => this.types[k]) as any;
   }
 
@@ -95,7 +135,7 @@ export class AuthorSearchComponent {
       const filters: DblpFilters = {
         protagonistPid: this.authorPid,
         types: this.selectedTypes(),
-        venueSuffix: this.venueSuffix || undefined,
+        venueSuffix: this.venueSuffix ?? undefined,
         minAuthorPubs: this.minAuthorPubs || 0,
         focusTopAuthors: this.focusTopAuthors || 0,
         yearMin: this.yearMin,
@@ -124,10 +164,11 @@ export class AuthorSearchComponent {
       this.metaJson = JSON.stringify(built.meta, null, 2);
 
       const s = built.meta.stats;
-      let overview = `${s.publications} publications \u2022 ${s.distinctCoauthorsInSet} coauthors
+      const pubs = s.publications ?? s.publications ?? rows.length;
+      let overview = `${pubs} publications \u2022 ${s.distinctCoauthorsInSet} coauthors
         avg set-strength ${s.avgCoauthorStrengthInSet_overall.toFixed(2)} \u2022 avg global-strength ${s.avgCoauthorStrengthGlobal_overall.toFixed(2)}`;
 
-      let typeBreakdown = Object.entries(s.byType)
+      let typeBreakdown = Object.entries(s.byType || {})
         .map(([type, count]) => `${count} ${type.toLowerCase()}`)
         .join(' \u2022 ');
       if (!typeBreakdown) typeBreakdown = 'no type info';
@@ -160,5 +201,35 @@ export class AuthorSearchComponent {
       console.error('PID lookup failed', err);
       this.authorName = '(Lookup failed)';
     }
+  }
+
+  nextPrefix(): string {
+    const n = Math.max(1, Math.floor(this.massMode.seq || 1));
+    return String(n).padStart(3, '0');
+  }
+
+  private canonicalMasterName(): string {
+    const safePid = (this.authorPid || 'unknown').replace(/\//g, '-');
+    const ts = (this.massMode.testsetId || '').trim();
+    if (ts) return `${ts}_${safePid}.master`;
+    const mainAuthor = (this.authorName || 'author').replace(/\s+/g, '_').replace(/&/g, '');
+    return `${mainAuthor}.master`;
+  }
+
+  previewMasterFilename(): string {
+    const base = this.canonicalMasterName();
+    return (this.massMode.enabled && this.massMode.testsetId)
+      ? `${this.nextPrefix()}_${base}`
+      : base;
+  }
+
+  // CSV controls
+  downloadCsvIndex() {
+    if (!this.massMode.testsetId) return;
+    this.csvIndex.download(this.massMode.testsetId);
+  }
+  resetCsvIndex() {
+    if (!this.massMode.testsetId) return;
+    this.csvIndex.clear(this.massMode.testsetId);
   }
 }
